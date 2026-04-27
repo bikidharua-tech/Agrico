@@ -5,6 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
         ca-certificates \
         default-libmysqlclient-dev \
         gettext-base \
@@ -15,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpng-dev \
         nginx \
         python3 \
+        python3-dev \
         python3-pip \
         supervisor \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -24,7 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /var/www/html
 
 COPY python_api/requirements.render.txt /tmp/requirements.render.txt
-RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.render.txt
+# Debian-based Python images block system pip installs unless explicitly allowed.
+RUN python3 -m pip install --upgrade pip setuptools wheel --break-system-packages \
+    && python3 -m pip install --no-cache-dir --prefer-binary --break-system-packages -r /tmp/requirements.render.txt
 
 COPY . /var/www/html
 COPY deploy/nginx.conf.template /etc/nginx/templates/agrico.conf.template
