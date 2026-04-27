@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: agrico
+    env: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health.php

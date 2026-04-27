@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+README.md
+backups/
+python_api/.venv/
+python_api/__pycache__/
+python_api/.tmp/
+python_api/data/
+python_api/notebooks/
+python_api/reports/
+public/uploads/
+tmp_plant_payload.json
+node_modules/

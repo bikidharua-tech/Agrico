@@ -1,0 +1,50 @@
+﻿# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Logs
+*.log
+python_api/uvicorn.out.log
+python_api/uvicorn.err.log
+public/php.out.log
+public/php.err.log
+
+# Backups and temporary exports
+backups/
+tmp_plant_payload.json
+
+# Large/generated ML artifacts
+python_api/data/tfds/
+python_api/reports/
+python_api/models/*.keras
+python_api/models/*.h5
+python_api/models/*.pt
+python_api/models/*.onnx
+
+# Runtime uploads (keep folder structure only)
+public/uploads/diagnosis/*
+public/uploads/forum/*
+!public/uploads/diagnosis/.gitkeep
+!public/uploads/forum/.gitkeep
+
+# Node (if added later)
+node_modules/
