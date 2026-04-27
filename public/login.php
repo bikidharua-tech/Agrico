@@ -7,6 +7,7 @@ $googleOauthReady = !empty($googleOauth['client_id'])
     && !str_starts_with((string)($googleOauth['client_id'] ?? ''), 'YOUR_')
     && !empty($googleOauth['client_secret'])
     && !str_starts_with((string)($googleOauth['client_secret'] ?? ''), 'YOUR_');
+$googleOauthHelp = 'Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_OAUTH_REDIRECT_URI in your environment.';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf();
@@ -69,7 +70,7 @@ require __DIR__ . '/../app/views/header.php';
                     <?php if ($googleOauthReady): ?>
                         Use your Google account below. If this is your first time, Agrico will create your account automatically.
                     <?php else: ?>
-                        Google sign-in is not configured yet. Add a real Google OAuth client ID and secret in <code>config/config.php</code>.
+                        Google sign-in is not configured yet. <?= e($googleOauthHelp) ?>
                     <?php endif; ?>
                 </div>
                 <div class="auth-alt" aria-label="<?= e(t('auth.or')) ?> <?= e(t('auth.google')) ?> / <?= e(t('auth.facebook')) ?>">
