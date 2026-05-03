@@ -7,19 +7,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
 
-    if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8) {
-        set_flash('error', t('flash.register_invalid'));
-    } elseif ($password !== $confirmPassword) {
-        set_flash('error', t('flash.password_mismatch'));
-    } else {
-        $hash = password_hash($password, PASSWORD_BCRYPT);
-        try {
-            $stmt = db()->prepare('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, "user", "active")');
+    try {
+        if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8) {
+            set_flash('error', t('flash.register_invalid'));
+        } elseif ($password !== $confirmPassword) {
+            set_flash('error', t('flash.password_mismatch'));
+        } else {
+            $hash = password_hash($password, PASSWORD_BCRYPT);
+            $stmt = db()->prepare('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, \'user\', \'active\')');
             $stmt->execute([$name, $email, $hash]);
             set_flash('success', t('flash.registration_complete'));
             redirect('login.php');
-        } catch (PDOException $e) {
+        }
+    } catch (Throwable $e) {
+        if (is_duplicate_key_error($e)) {
             set_flash('error', t('flash.email_exists'));
+        } elseif (is_database_connection_error($e)) {
+            set_flash('error', auth_deployment_error_message());
+        } else {
+            set_flash('error', 'Registration failed. Please try again.');
         }
     }
 }

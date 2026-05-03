@@ -4,14 +4,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf();
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    $stmt = db()->prepare('SELECT id, password_hash, role, status FROM users WHERE email = ? LIMIT 1');
-    $stmt->execute([$email]);
-    $u = $stmt->fetch();
-    if ($u && $u['status'] === 'active' && $u['role'] === 'admin' && password_verify($password, $u['password_hash'])) {
-        $_SESSION['user_id'] = (int)$u['id'];
-        redirect('admin.php');
+    try {
+        $stmt = db()->prepare('SELECT id, password_hash, role, status FROM users WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $u = $stmt->fetch();
+        if ($u && $u['status'] === 'active' && $u['role'] === 'admin' && password_verify($password, $u['password_hash'])) {
+            $_SESSION['user_id'] = (int)$u['id'];
+            redirect('admin.php');
+        }
+        set_flash('error', t('flash.invalid_admin_credentials'));
+    } catch (Throwable $e) {
+        set_flash('error', auth_deployment_error_message());
     }
-    set_flash('error', t('flash.invalid_admin_credentials'));
 }
 $flash = get_flash();
 $title = t('auth.admin_login');

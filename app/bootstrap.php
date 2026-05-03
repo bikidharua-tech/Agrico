@@ -57,6 +57,33 @@ function db(): PDO {
     return $pdo;
 }
 
+function is_duplicate_key_error(Throwable $e): bool {
+    $code = (string)$e->getCode();
+    if ($code === '23000' || $code === '1062') {
+        return true;
+    }
+
+    $message = strtolower($e->getMessage());
+    return str_contains($message, 'duplicate entry') || str_contains($message, 'unique constraint failed');
+}
+
+function is_database_connection_error(Throwable $e): bool {
+    $code = (string)$e->getCode();
+    if (in_array($code, ['2002', '2003', '2006', '1045'], true)) {
+        return true;
+    }
+
+    $message = strtolower($e->getMessage());
+    return str_contains($message, 'sqlstate[hy000] [2002]')
+        || str_contains($message, 'connection refused')
+        || str_contains($message, 'access denied for user')
+        || str_contains($message, 'unknown mysql server host');
+}
+
+function auth_deployment_error_message(): string {
+    return 'Authentication is unavailable because the database connection failed. Check your deployment DB_HOST, DB_NAME, DB_USER, and DB_PASS values.';
+}
+
 function table_has_column(string $table, string $column): bool {
     static $cache = [];
     $key = $table . '.' . $column;
@@ -110,11 +137,15 @@ function current_user(): ?array {
     if (empty($_SESSION['user_id'])) {
         return null;
     }
-    ensure_user_profile_schema();
-    $stmt = db()->prepare('SELECT id, name, email, role, status, avatar_path, bio FROM users WHERE id = ? LIMIT 1');
-    $stmt->execute([$_SESSION['user_id']]);
-    $user = $stmt->fetch();
-    return $user ?: null;
+    try {
+        ensure_user_profile_schema();
+        $stmt = db()->prepare('SELECT id, name, email, role, status, avatar_path, bio FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch();
+        return $user ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
 }
 
 function is_logged_in(): bool {

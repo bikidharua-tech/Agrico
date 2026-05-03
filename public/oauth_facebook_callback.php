@@ -56,21 +56,41 @@ if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // Find or create local user
-$stmt = db()->prepare('SELECT id, status FROM users WHERE email = ? LIMIT 1');
-$stmt->execute([$email]);
-$u = $stmt->fetch();
-if ($u) {
-    if (($u['status'] ?? '') !== 'active') {
-        http_response_code(403);
-        exit('Account is inactive.');
+try {
+    $stmt = db()->prepare('SELECT id, status FROM users WHERE email = ? LIMIT 1');
+    $stmt->execute([$email]);
+    $u = $stmt->fetch();
+    if ($u) {
+        if (($u['status'] ?? '') !== 'active') {
+            http_response_code(403);
+            exit('Account is inactive.');
+        }
+        $_SESSION['user_id'] = (int)$u['id'];
+        redirect('index.php');
     }
-    $_SESSION['user_id'] = (int)$u['id'];
-    redirect('index.php');
-}
 
-$randomPass = bin2hex(random_bytes(16));
-$hash = password_hash($randomPass, PASSWORD_BCRYPT);
-db()->prepare('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, \"user\", \"active\")')
-    ->execute([$name ?: 'User', $email, $hash]);
-$_SESSION['user_id'] = (int)db()->lastInsertId();
-redirect('index.php');
+    $randomPass = bin2hex(random_bytes(16));
+    $hash = password_hash($randomPass, PASSWORD_BCRYPT);
+    db()->prepare('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, \'user\', \'active\')')
+        ->execute([$name ?: 'User', $email, $hash]);
+    $_SESSION['user_id'] = (int)db()->lastInsertId();
+    redirect('index.php');
+} catch (Throwable $e) {
+    if (is_database_connection_error($e)) {
+        http_response_code(500);
+        exit(auth_deployment_error_message());
+    }
+
+    if (is_duplicate_key_error($e)) {
+        $stmt = db()->prepare('SELECT id, status FROM users WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $u = $stmt->fetch();
+        if ($u && ($u['status'] ?? '') === 'active') {
+            $_SESSION['user_id'] = (int)$u['id'];
+            redirect('index.php');
+        }
+    }
+
+    http_response_code(500);
+    exit('Facebook sign-in failed.');
+}

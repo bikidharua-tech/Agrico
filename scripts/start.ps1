@@ -1,4 +1,4 @@
-param(
+ param(
     [switch]$StartPhp,
     [switch]$OpenBrowser,
     [string]$SiteUrl = "",

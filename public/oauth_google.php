@@ -6,9 +6,8 @@ $g = $config['oauth']['google'] ?? null;
 if (
     !$g
     || str_starts_with($g['client_id'] ?? '', 'YOUR_')
-    || str_starts_with($g['client_secret'] ?? '', 'YOUR_')
 ) {
-    set_flash('error', 'Google sign-in is not configured yet. Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in your environment.');
+    set_flash('error', 'Google sign-in is not configured yet. Set GOOGLE_OAUTH_CLIENT_ID in your environment.');
     redirect('login.php');
 }
 

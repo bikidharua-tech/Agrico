@@ -1237,6 +1237,12 @@ textarea { min-height: 120px; resize: vertical; }
     font-size: 13px;
     text-align: center;
 }
+.google-signin-button {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0 8px;
+    min-height: 52px;
+}
 .auth-or {
     display: flex;
     align-items: center;

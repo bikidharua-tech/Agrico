@@ -4,27 +4,29 @@ global $config;
 
 $googleOauth = $config['oauth']['google'] ?? [];
 $googleOauthReady = !empty($googleOauth['client_id'])
-    && !str_starts_with((string)($googleOauth['client_id'] ?? ''), 'YOUR_')
-    && !empty($googleOauth['client_secret'])
-    && !str_starts_with((string)($googleOauth['client_secret'] ?? ''), 'YOUR_');
-$googleOauthHelp = 'Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_OAUTH_REDIRECT_URI in your environment.';
+    && !str_starts_with((string)($googleOauth['client_id'] ?? ''), 'YOUR_');
+$googleOauthHelp = 'Set GOOGLE_OAUTH_CLIENT_ID in your environment if you want to override the built-in Google client ID.';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf();
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    $stmt = db()->prepare('SELECT id, password_hash, role, status FROM users WHERE email = ? LIMIT 1');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+    try {
+        $stmt = db()->prepare('SELECT id, password_hash, role, status FROM users WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-    if ($user && $user['status'] === 'active' && ($user['role'] ?? '') === 'user' && password_verify($password, $user['password_hash'])) {
-        $_SESSION['user_id'] = (int)$user['id'];
-        redirect('index.php');
-    }
-    if ($user && ($user['role'] ?? '') === 'admin') {
-        set_flash('error', t('flash.admin_use_admin_login'));
-    } else {
-        set_flash('error', t('flash.invalid_credentials'));
+        if ($user && $user['status'] === 'active' && ($user['role'] ?? '') === 'user' && password_verify($password, $user['password_hash'])) {
+            $_SESSION['user_id'] = (int)$user['id'];
+            redirect('index.php');
+        }
+        if ($user && ($user['role'] ?? '') === 'admin') {
+            set_flash('error', t('flash.admin_use_admin_login'));
+        } else {
+            set_flash('error', t('flash.invalid_credentials'));
+        }
+    } catch (Throwable $e) {
+        set_flash('error', auth_deployment_error_message());
     }
 }
 $flash = get_flash();

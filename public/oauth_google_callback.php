@@ -8,7 +8,7 @@ if (
     || str_starts_with($g['client_id'] ?? '', 'YOUR_')
     || str_starts_with($g['client_secret'] ?? '', 'YOUR_')
 ) {
-    set_flash('error', 'Google sign-in is not configured yet. Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in your environment.');
+    set_flash('error', 'Google sign-in is not configured yet. Please check the Google OAuth settings in your deployment.');
     redirect('login.php');
 }
 
@@ -74,22 +74,42 @@ if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // Find or create local user
-$stmt = db()->prepare('SELECT id, status FROM users WHERE email = ? LIMIT 1');
-$stmt->execute([$email]);
-$u = $stmt->fetch();
+try {
+    $stmt = db()->prepare('SELECT id, status FROM users WHERE email = ? LIMIT 1');
+    $stmt->execute([$email]);
+    $u = $stmt->fetch();
 
-if ($u) {
-    if (($u['status'] ?? '') !== 'active') {
-        http_response_code(403);
-        exit('Account is inactive.');
+    if ($u) {
+        if (($u['status'] ?? '') !== 'active') {
+            http_response_code(403);
+            exit('Account is inactive.');
+        }
+        $_SESSION['user_id'] = (int)$u['id'];
+        redirect('index.php');
     }
-    $_SESSION['user_id'] = (int)$u['id'];
-    redirect('index.php');
-}
 
-$randomPass = bin2hex(random_bytes(16));
-$hash = password_hash($randomPass, PASSWORD_BCRYPT);
-db()->prepare('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, \"user\", \"active\")')
-    ->execute([$name ?: 'User', $email, $hash]);
-$_SESSION['user_id'] = (int)db()->lastInsertId();
-redirect('index.php');
+    $randomPass = bin2hex(random_bytes(16));
+    $hash = password_hash($randomPass, PASSWORD_BCRYPT);
+    db()->prepare('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, \'user\', \'active\')')
+        ->execute([$name ?: 'User', $email, $hash]);
+    $_SESSION['user_id'] = (int)db()->lastInsertId();
+    redirect('index.php');
+} catch (Throwable $e) {
+    if (is_database_connection_error($e)) {
+        http_response_code(500);
+        exit(auth_deployment_error_message());
+    }
+
+    if (is_duplicate_key_error($e)) {
+        $stmt = db()->prepare('SELECT id, status FROM users WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        $u = $stmt->fetch();
+        if ($u && ($u['status'] ?? '') === 'active') {
+            $_SESSION['user_id'] = (int)$u['id'];
+            redirect('index.php');
+        }
+    }
+
+    http_response_code(500);
+    exit('Google sign-in failed.');
+}

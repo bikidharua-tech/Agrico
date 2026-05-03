@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($action === 'delete_user') {
         $uid = (int)$_POST['user_id'];
-        db()->prepare('DELETE FROM users WHERE id = ? AND role <> "admin"')->execute([$uid]);
+        db()->prepare('DELETE FROM users WHERE id = ? AND role <> \'admin\'')->execute([$uid]);
         admin_log($user['id'], 'delete_user', 'user', $uid, 'Deleted user');
     }
     if ($action === 'delete_post') {

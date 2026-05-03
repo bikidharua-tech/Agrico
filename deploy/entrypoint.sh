@@ -8,6 +8,11 @@ set -euo pipefail
 export API_HOST
 export API_PORT
 
+cat >/usr/local/etc/php-fpm.d/zz-render-env.conf <<'EOF'
+[www]
+clear_env = no
+EOF
+
 mkdir -p /var/www/html/python_api/.tmp
 mkdir -p /var/www/html/public/uploads/diagnosis
 mkdir -p /var/www/html/public/uploads/forum

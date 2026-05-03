@@ -50,6 +50,10 @@ load_dotenv_file($repoRoot . '/.env');
 function env_value(string $key, ?string $default = null): ?string {
     $value = getenv($key);
     if ($value === false || $value === '') {
+        $value = $_ENV[$key] ?? $_SERVER[$key] ?? $default;
+    }
+
+    if ($value === false || $value === '') {
         return $default;
     }
     return $value;
@@ -57,6 +61,10 @@ function env_value(string $key, ?string $default = null): ?string {
 
 function env_bool(string $key, bool $default = false): bool {
     $value = getenv($key);
+    if ($value === false || $value === '') {
+        $value = $_ENV[$key] ?? $_SERVER[$key] ?? $default;
+    }
+
     if ($value === false || $value === '') {
         return $default;
     }
@@ -67,6 +75,7 @@ function env_bool(string $key, bool $default = false): bool {
 $baseUrl = rtrim((string)env_value('APP_BASE_URL', 'http://localhost'), '/');
 $googleRedirect = env_value('GOOGLE_OAUTH_REDIRECT_URI', $baseUrl . '/oauth_google_callback.php');
 $facebookRedirect = env_value('FACEBOOK_OAUTH_REDIRECT_URI', $baseUrl . '/oauth_facebook_callback.php');
+$defaultGoogleClientId = '490242781883-u8cfjbvhqnc2am2kacde1s35a2nd6q6c.apps.googleusercontent.com';
 
 return [
     'app_name' => env_value('APP_NAME', 'Agrico'),
@@ -93,7 +102,7 @@ return [
     'openai_model' => env_value('OPENAI_MODEL', 'gpt-4.1-mini'),
     'oauth' => [
         'google' => [
-            'client_id' => env_value('GOOGLE_OAUTH_CLIENT_ID', ''),
+            'client_id' => env_value('GOOGLE_OAUTH_CLIENT_ID', $defaultGoogleClientId),
             'client_secret' => env_value('GOOGLE_OAUTH_CLIENT_SECRET', ''),
             'redirect_uri' => $googleRedirect
         ],
