@@ -30,6 +30,11 @@ setcookie('oauth_state_google', '', [
     'samesite' => 'Lax',
 ]);
 
+if ($g['client_secret'] === '') {
+    http_response_code(500);
+    exit('Google sign-in is missing the client secret in your deployment environment.');
+}
+
 // Exchange code for access token
 $tokenCh = curl_init('https://oauth2.googleapis.com/token');
 curl_setopt_array($tokenCh, [
@@ -47,10 +52,37 @@ curl_setopt_array($tokenCh, [
 ]);
 $tokenResp = curl_exec($tokenCh);
 $tokenCode = curl_getinfo($tokenCh, CURLINFO_HTTP_CODE);
+$tokenCurlError = curl_error($tokenCh);
 curl_close($tokenCh);
 if ($tokenResp === false || $tokenCode !== 200) {
+    $tokenMessage = 'Google token exchange failed.';
+    $tokenDetails = [];
+    if ($tokenCurlError !== '') {
+        $tokenDetails[] = 'cURL error: ' . $tokenCurlError;
+    }
+    $tokenJson = json_decode((string)$tokenResp, true);
+    if (is_array($tokenJson)) {
+        if (!empty($tokenJson['error'])) {
+            $tokenDetails[] = 'error: ' . (string)$tokenJson['error'];
+        }
+        if (!empty($tokenJson['error_description'])) {
+            $tokenDetails[] = 'description: ' . (string)$tokenJson['error_description'];
+        }
+        if (!empty($tokenJson['error_uri'])) {
+            $tokenDetails[] = 'uri: ' . (string)$tokenJson['error_uri'];
+        }
+    } elseif ($tokenResp !== false) {
+        $rawTokenResp = trim((string)$tokenResp);
+        if ($rawTokenResp !== '') {
+            $tokenDetails[] = 'response: ' . substr($rawTokenResp, 0, 300);
+        }
+    }
+    if ($tokenDetails) {
+        $tokenMessage .= ' ' . implode(' | ', $tokenDetails);
+    }
+    error_log($tokenMessage);
     http_response_code(500);
-    exit('Google token exchange failed.');
+    exit($tokenMessage);
 }
 $tokenData = json_decode($tokenResp, true) ?: [];
 $accessToken = $tokenData['access_token'] ?? '';
