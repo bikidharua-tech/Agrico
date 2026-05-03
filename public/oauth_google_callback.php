@@ -16,19 +16,36 @@ $g['redirect_uri'] = site_url('oauth_google_callback.php');
 
 $code = $_GET['code'] ?? '';
 $state = $_GET['state'] ?? '';
-$expectedState = $_SESSION['oauth_state_google'] ?? ($_COOKIE['oauth_state_google'] ?? '');
-if (!$code || !$state || !$expectedState || !hash_equals($expectedState, $state)) {
+$stateParts = explode('.', (string)$state, 2);
+if (!$code || !$state || count($stateParts) !== 2) {
     http_response_code(400);
     exit('Invalid OAuth state.');
 }
-unset($_SESSION['oauth_state_google']);
-setcookie('oauth_state_google', '', [
-    'expires' => time() - 3600,
-    'path' => '/',
-    'secure' => request_is_https(),
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
+
+$statePayloadJson = base64url_decode($stateParts[0]);
+$stateSignature = base64url_decode($stateParts[1]);
+if ($statePayloadJson === false || $stateSignature === false) {
+    http_response_code(400);
+    exit('Invalid OAuth state.');
+}
+
+$expectedSignature = hash_hmac('sha256', $statePayloadJson, $g['client_secret'], true);
+if (!hash_equals($expectedSignature, $stateSignature)) {
+    http_response_code(400);
+    exit('Invalid OAuth state.');
+}
+
+$statePayload = json_decode($statePayloadJson, true);
+if (!is_array($statePayload)) {
+    http_response_code(400);
+    exit('Invalid OAuth state.');
+}
+
+$stateTimestamp = (int)($statePayload['ts'] ?? 0);
+if ($stateTimestamp <= 0 || abs(time() - $stateTimestamp) > 300) {
+    http_response_code(400);
+    exit('Invalid OAuth state.');
+}
 
 if ($g['client_secret'] === '') {
     http_response_code(500);

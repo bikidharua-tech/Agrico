@@ -52,6 +52,23 @@ if (!function_exists('str_ends_with')) {
     }
 }
 
+if (!function_exists('base64url_encode')) {
+    function base64url_encode(string $value): string {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+}
+
+if (!function_exists('base64url_decode')) {
+    function base64url_decode(string $value) {
+        $remainder = strlen($value) % 4;
+        if ($remainder !== 0) {
+            $value .= str_repeat('=', 4 - $remainder);
+        }
+
+        return base64_decode(strtr($value, '-_', '+/'), true);
+    }
+}
+
 function db(): PDO {
     static $pdo = null;
     global $config;

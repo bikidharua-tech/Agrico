@@ -4,8 +4,10 @@ global $config;
 
 $googleOauth = $config['oauth']['google'] ?? [];
 $googleOauthReady = !empty($googleOauth['client_id'])
-    && !str_starts_with((string)($googleOauth['client_id'] ?? ''), 'YOUR_');
-$googleOauthHelp = 'Set GOOGLE_OAUTH_CLIENT_ID in your environment if you want to override the built-in Google client ID.';
+    && !str_starts_with((string)($googleOauth['client_id'] ?? ''), 'YOUR_')
+    && !empty($googleOauth['client_secret'])
+    && !str_starts_with((string)($googleOauth['client_secret'] ?? ''), 'YOUR_');
+$googleOauthHelp = 'Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in your environment.';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf();
