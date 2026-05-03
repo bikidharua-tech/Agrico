@@ -72,20 +72,66 @@ function env_bool(string $key, bool $default = false): bool {
     return in_array(strtolower(trim((string)$value)), ['1', 'true', 'yes', 'on'], true);
 }
 
-$baseUrl = rtrim((string)env_value('APP_BASE_URL', 'http://localhost'), '/');
+function first_env_value(array $keys, ?string $default = null): ?string {
+    foreach ($keys as $key) {
+        $value = env_value((string)$key);
+        if ($value !== null && $value !== '') {
+            return $value;
+        }
+    }
+
+    return $default;
+}
+
+function parse_mysql_database_url(string $url): ?array {
+    $parts = parse_url($url);
+    if (!is_array($parts)) {
+        return null;
+    }
+
+    $scheme = strtolower((string)($parts['scheme'] ?? ''));
+    if (!in_array($scheme, ['mysql', 'mariadb', 'mysql2'], true)) {
+        return null;
+    }
+
+    $host = trim(rawurldecode((string)($parts['host'] ?? '')));
+    $name = trim(ltrim(rawurldecode((string)($parts['path'] ?? '')), '/'));
+    $user = trim(rawurldecode((string)($parts['user'] ?? '')));
+    if ($host === '' || $name === '' || $user === '') {
+        return null;
+    }
+
+    return [
+        'host' => $host,
+        'port' => (string)($parts['port'] ?? '3306'),
+        'name' => $name,
+        'user' => $user,
+        'pass' => rawurldecode((string)($parts['pass'] ?? '')),
+    ];
+}
+
+$renderBaseUrl = env_value('RENDER_EXTERNAL_URL', 'http://localhost');
+$baseUrl = rtrim((string)env_value('APP_BASE_URL', $renderBaseUrl), '/');
 $googleRedirect = env_value('GOOGLE_OAUTH_REDIRECT_URI', $baseUrl . '/oauth_google_callback.php');
 $facebookRedirect = env_value('FACEBOOK_OAUTH_REDIRECT_URI', $baseUrl . '/oauth_facebook_callback.php');
 $defaultGoogleClientId = '490242781883-u8cfjbvhqnc2am2kacde1s35a2nd6q6c.apps.googleusercontent.com';
+$databaseUrl = first_env_value([
+    'DATABASE_URL',
+    'MYSQL_URL',
+    'MYSQL_DATABASE_URL',
+    'DB_URL',
+]);
+$parsedDatabaseUrl = $databaseUrl ? parse_mysql_database_url($databaseUrl) : null;
 
 return [
     'app_name' => env_value('APP_NAME', 'Agrico'),
     'base_url' => $baseUrl,
     'db' => [
-        'host' => env_value('DB_HOST', '127.0.0.1'),
-        'port' => env_value('DB_PORT', '3306'),
-        'name' => env_value('DB_NAME', 'agrico'),
-        'user' => env_value('DB_USER', 'root'),
-        'pass' => env_value('DB_PASS', ''),
+        'host' => $parsedDatabaseUrl['host'] ?? first_env_value(['DB_HOST', 'MYSQLHOST', 'MYSQL_HOST'], '127.0.0.1'),
+        'port' => $parsedDatabaseUrl['port'] ?? first_env_value(['DB_PORT', 'MYSQLPORT', 'MYSQL_PORT'], '3306'),
+        'name' => $parsedDatabaseUrl['name'] ?? first_env_value(['DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE'], 'agrico'),
+        'user' => $parsedDatabaseUrl['user'] ?? first_env_value(['DB_USER', 'MYSQLUSER', 'MYSQL_USER'], 'root'),
+        'pass' => $parsedDatabaseUrl['pass'] ?? first_env_value(['DB_PASS', 'MYSQLPASSWORD', 'MYSQL_PASSWORD'], ''),
         'charset' => 'utf8mb4'
     ],
     'python_api_url' => env_value('PYTHON_API_URL', 'http://127.0.0.1:8001'),

@@ -52,7 +52,9 @@ This project can run on Render as a single Docker web service.
    - Render does not provide a free managed MySQL database, so use an external MySQL host.
    - Import `sql/schema.sql` into that database.
 2. Set environment variables from `.env.example`.
-   - At minimum: `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `APP_BASE_URL`.
+   - Use either `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`.
+   - Render-style MySQL env names (`MYSQLHOST`, `MYSQLPORT`, `MYSQLDATABASE`, `MYSQLUSER`, `MYSQLPASSWORD`) also work.
+   - Set `APP_BASE_URL` to your deployed site URL.
    - Add OAuth/API keys only if you want those features enabled.
 3. Connect the repo to Render.
    - Use the `render.yaml` blueprint in the repo root.

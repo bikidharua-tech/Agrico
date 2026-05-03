@@ -114,7 +114,7 @@ function is_database_connection_error(Throwable $e): bool {
 }
 
 function auth_deployment_error_message(): string {
-    return 'Authentication is unavailable because the database connection failed. Check your deployment DB_HOST, DB_NAME, DB_USER, and DB_PASS values.';
+    return 'Authentication is unavailable because the database connection failed. Check DATABASE_URL or DB_HOST, DB_PORT, DB_NAME, DB_USER, and DB_PASS values.';
 }
 
 function table_has_column(string $table, string $column): bool {
