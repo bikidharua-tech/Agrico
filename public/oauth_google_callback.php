@@ -16,11 +16,19 @@ $g['redirect_uri'] = site_url('oauth_google_callback.php');
 
 $code = $_GET['code'] ?? '';
 $state = $_GET['state'] ?? '';
-if (!$code || !$state || !hash_equals($_SESSION['oauth_state_google'] ?? '', $state)) {
+$expectedState = $_SESSION['oauth_state_google'] ?? ($_COOKIE['oauth_state_google'] ?? '');
+if (!$code || !$state || !$expectedState || !hash_equals($expectedState, $state)) {
     http_response_code(400);
     exit('Invalid OAuth state.');
 }
 unset($_SESSION['oauth_state_google']);
+setcookie('oauth_state_google', '', [
+    'expires' => time() - 3600,
+    'path' => '/',
+    'secure' => request_is_https(),
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 
 // Exchange code for access token
 $tokenCh = curl_init('https://oauth2.googleapis.com/token');

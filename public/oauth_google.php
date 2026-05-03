@@ -15,6 +15,13 @@ $g['redirect_uri'] = site_url('oauth_google_callback.php');
 
 $state = bin2hex(random_bytes(16));
 $_SESSION['oauth_state_google'] = $state;
+setcookie('oauth_state_google', $state, [
+    'expires' => time() + 300,
+    'path' => '/',
+    'secure' => request_is_https(),
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 
 $params = [
     'client_id' => $g['client_id'],
